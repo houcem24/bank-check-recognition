@@ -1,136 +1,61 @@
-Autocorrection System for Bank Checks
+# Bank Check Amount Verification
 
-(Deep Learning & Computer Vision Project)
+A computer vision pipeline that reads a scanned bank check, recognises both the amount written in digits
+(courtesy amount) and the amount written in words (legal amount), corrects spelling errors in the handwriting
+recognition, and flags checks where the two amounts do not match.
 
-This project develops an autocorrection / auto-recognition system for bank checks (cheques), using deep learning and computer vision techniques. The system aims to detect, extract, and correct information from scanned or photographed bank check images (e.g., payer name, amount, account number, date), combining object detection and optical character recognition (OCR).
+## Pipeline
 
-🎯 Motivation & Scope
+1. **Preprocessing (OpenCV):** grayscale conversion, binary thresholding, morphological filtering and Hough-line
+   detection.
+2. **Printed text (Tesseract OCR):** bank name, branch and other printed fields.
+3. **Segmentation:** dilation and contour detection crop the courtesy-amount box into single digits and the
+   legal-amount line into single words.
+4. **Courtesy amount:** a CNN trained on MNIST-style 28×28 digits classifies each digit
+   (`digits_recognition.h5`).
+5. **Legal amount:** words are read with a CNN-RNN-CTC handwriting model based on
+   [SimpleHTR](https://github.com/githubharald/SimpleHTR), trained on the IAM dataset.
+6. **Auto-correction:** recognised words are corrected against the vocabulary of amounts
+   (one, two, … thousand, lakh) with `pyspellchecker`. An experimental sequence model for the same task
+   (`autocorrection.h5`) is loaded at the end of the notebook.
+7. **Verification:** the digit amount is converted to words (Indian numbering: lakh, thousand, hundred) and
+   compared with the corrected legal amount.
 
-Manually processing bank checks is time-consuming and error-prone. Automating the extraction and error correction of check fields can significantly improve efficiency and accuracy in banking systems.
+Example from the notebook: misread words such as `latch`, `Twentrh` and `Thrusond` are corrected to
+"one lakh twenty five thousand", and the check is flagged because the digits read 492,399.
 
-This project integrates:
+## Repository structure
 
-Object detection (to localize the individual fields on a check)
+```
+├── bank_check_recognition.ipynb   # End-to-end pipeline
+├── requirements.txt
+└── docs/                          # Course deliverables: technical and sales presentations,
+                                   # project report, poster, business model canvas
+```
 
-OCR (to read text from detected regions)
+## Running the notebook
 
-Post-processing / correction steps to fix recognition errors
-
-📂 Repository Structure
-
-Below is a suggested / observed layout (modify to reflect your actual structure):
-
-.
-├── data/                  # check image dataset, annotations, test splits  
-├── models/                # saved model weights (object detection, OCR)  
-├── notebooks/             # training, evaluation, exploration notebooks  
-├── src/                   # source code (detection, OCR pipeline, utils)  
-│   ├── detection.py  
-│   ├── ocr.py  
-│   ├── correction.py  
-│   └── inference.py  
-├── requirements.txt  
-├── README.md  
-├── LICENSE  
-└── demo/                  # sample inputs & outputs (images, corrected text)  
-
-
-You can update this structure based on your actual repository.
-
-🛠️ Key Components & Workflow
-
-Data Preparation & Annotation
-
-Collect scanned / photographed check images
-
-Annotate bounding boxes for fields (e.g. name, date, amount)
-
-Object Detection Model
-
-A deep learning model (e.g. YOLO family or Faster R-CNN) to locate field regions
-
-OCR Module
-
-For each detected field, apply OCR (e.g. Tesseract, EasyOCR, or custom network)
-
-Preprocess region (cropping, thresholding) to improve recognition
-
-Post-processing & Correction
-
-Clean OCR text: remove noise, fix known formatting
-
-Validate numeric fields (e.g. amount) against rules
-
-Spell check / dictionary correction for names
-
-Inference Pipeline
-
-Given a new check image → detect fields → OCR → correct → output structured result
-
-Evaluation
-
-Metrics: detection IoU, OCR character accuracy, field-level accuracy
-
-Visual results: bounding box overlays, text overlays
-
-⚙️ Setup & Installation
-
-Clone the repository:
-
-git clone https://github.com/houcem24/Deep-Learning-and-Computer-Vision-Project-Autocorrection-System-of-Bank-checks.git
-cd Deep-Learning-and-Computer-Vision-Project-Autocorrection-System-of-Bank-checks
-
-
-Install dependencies (preferably in a virtual environment):
-
+```bash
+git clone https://github.com/houcem24/bank-check-recognition.git
+cd bank-check-recognition
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+```
 
+The notebook also needs:
 
-Download / prepare datasets and annotation files, and place them in the data/ folder.
+- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) installed and on your `PATH`
+- a checkout of [SimpleHTR](https://github.com/githubharald/SimpleHTR) with its pretrained model
+- the trained models `digits_recognition.h5` and `autocorrection.h5` and a sample check image
 
-(If required) download pretrained model weights and place in models/.
+The trained models and check images are not included in this repository. Put them in one folder and point the
+notebook at it with `export BANK_CHECK_DATA_DIR=/path/to/folder`.
 
-🚀 Usage
-Training
+## Context
 
-You can train detection / OCR models using scripts or notebooks. For example:
+Integrated data science project at ESPRIT (2022), built in a team of six: Youssef Mansour, Molka Mrad,
+Houssem Ouerdiane, Dhia Ben Amor, Haithem Gharbi and Aicha Chaaba.
 
-python src/train_detection.py --config configs/detect_config.yaml
-python src/train_ocr.py --config configs/ocr_config.yaml
+## License
 
-Inference / Demo
-
-Run the inference pipeline on new check images:
-
-python src/inference.py --input_path demo/sample_check.jpg --output_path demo/output.json
-
-
-You should get a JSON (or other structured) output containing the detected fields and corrected text.
-
-You can also visualize bounding boxes and recognized text region overlays for inspection.
-
-📊 Evaluation & Results
-
-Object detection performance (e.g. mean IoU, detection accuracy)
-
-OCR accuracy / character error rate
-
-Field-level accuracy (correct full field vs partial)
-
-Examples & visualizations (before vs after correction)
-
-Include sample images / result visuals in demo/ or in the README.
-
-🔮 Future Work & Improvements
-
-Expand dataset diversity (various check templates, lighting conditions)
-
-Use more advanced detection networks (e.g. transformer-based)
-
-Fine-tune OCR models for handwriting / stylized fonts
-
-Improve error correction using contextual / language models
-
-Build a GUI or web interface for uploading checks
-
-Real-time processing / mobile deployment
+[MIT](LICENSE). SimpleHTR is © Harald Scheidl under its own MIT license.
