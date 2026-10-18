@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# IDEs and OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Model and training artifacts
+runs/
+*.pt
+*.pth
+*.pkl
+*.h5
+
+# Models, scans and the SimpleHTR checkout live outside the repo
+SimpleHTR/
+*.tif
